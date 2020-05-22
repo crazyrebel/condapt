@@ -170,11 +170,10 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         self.pip_install(*pip_packages)
 
     def update_env_path(self, env):
-        dirname = os.path.dirname(sys.executable)
-        envpath = os.path.join(dirname, f'envs/{env}')
+        exedirname = os.path.dirname(sys.executable)
+        envpath = os.path.join(exedirname, f'envs/{env}')
         if platform.system() != "Windows":
-            envpath = os.path.join(dirname, f'../envs/{env}')
-            python = os.path.join(envpath, 'bin/python')
+            envpath = os.path.join(exedirname, f'../envs/{env}')
             pathlist = [
                 os.path.join(envpath, 'bin'),
             ]
@@ -284,9 +283,12 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         with open('check.py', 'w') as f:
             f.write(check_code)
 
-        dirname = os.path.dirname(sys.executable)
-        envpath = os.path.join(dirname, f'envs/{env}')
+        exedirname = os.path.dirname(sys.executable)
+        envpath = os.path.join(exedirname, f'envs/{env}')
         python = os.path.join(envpath, 'python')
+        if platform.system() != "Windows":
+            envpath = os.path.join(exedirname, f'../envs/{env}')
+            python = os.path.join(envpath, 'bin/python')
         self.update_env_path(env)
         os.system(f'{python} check.py')
         print()
