@@ -59,16 +59,17 @@ index-url=https://pypi.tuna.tsinghua.edu.cn/simple
 trusted-host=pypi.tuna.tsinghua.edu.cn'''
 
         self.silent_mode = True
-        self.conda_packages = ['nb_conda',
-                               'tensorboard',
+        self.conda_packages = ['tensorboard',
                                'ipython',
                                'matplotlib',
-                               'pandas'
+                               'pandas',
+                               'jupyter notebook'
                                ]
         self.pip_packages = ['opencv-python']
         self.python_ver = '3.8'
         self.pt_env = f'pytorch{self.python_ver}'
         self.tf_env = f'tensorflow{self.python_ver}'
+        self.pathenv = None
 
     def conda_install(self, env, *packages):
         if env != '':
@@ -95,7 +96,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
                 content = f.read()
                 if self.conda_settings in content:
                     return
-            
+
         print('\nSetup conda mirror\n')
         with open(condarc, 'w') as f:
             f.write(self.conda_settings)
@@ -106,7 +107,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         # disable it in current env
         # os.system('conda config --env --remove always_yes')
         os.system('conda config --show')
-        
+
         os.system('conda clean -i ')
         os.system('conda update -n base -c defaults conda -y')
         if platform.system() == "Darwin":
@@ -115,7 +116,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
                 command = 'ln -s %s %s' % (os.path.join(dirname, '../lib/libffi.7.dylib'),
                                            os.path.join(dirname, '../lib/libffi.6.dylib'))
                 os.system(command)
-                
+
     def setup_pip(self):
         pippathname = 'pip'
         pipconfname = 'pip.ini'
@@ -126,7 +127,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         pipconfpath = os.path.join(os.path.expanduser('~'), pippathname)
         if not os.path.exists(pipconfpath):
             os.mkdir(pipconfpath)
-            
+
         pipconf = os.path.join(pipconfpath, pipconfname)
         if os.path.exists(pipconf):
             with open(pipconf, 'r') as f:
@@ -168,16 +169,45 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         print('\nInstall pip packages', pip_packages, '\n')
         self.pip_install(*pip_packages)
 
+    def update_env_path(self, env):
+        dirname = os.path.dirname(sys.executable)
+        envpath = os.path.join(dirname, f'envs/{env}')
+        if platform.system() != "Windows":
+            envpath = os.path.join(dirname, f'../envs/{env}')
+            python = os.path.join(envpath, 'bin/python')
+            pathlist = [
+                os.path.join(envpath, 'bin'),
+            ]
+        else:
+            pathlist = [
+                envpath,
+                os.path.join(envpath, 'Library/mingw-w64/bin'),
+                os.path.join(envpath, 'Library/usr/bin'),
+                os.path.join(envpath, 'Library/bin'),
+                os.path.join(envpath, 'Scripts'),
+                os.path.join(envpath, 'bin'),
+            ]
+
+        if self.pathenv:
+            os.environ["PATH"] = os.environ["PATH"].replace(self.pathenv, '')
+            # print(os.environ["PATH"])
+
+        self.pathenv = os.pathsep.join(pathlist) + os.pathsep
+        os.environ["PATH"] = self.pathenv + os.environ["PATH"]
+        # print(os.environ["PATH"])
+
     def create_env(self, env, python_ver):
         # command = 'conda create -n %s python=3.7 -y' % env
         env = input(f'Enter env name (default is {env}):') or env
         python_ver = input(f'Enter python version (default is {python_ver}):') or python_ver
+        # conda remove -n name --all
         command = f'conda create -n {env} python={python_ver}'
         if platform.system() != "Windows":
             command += ' && eval "$(conda shell.bash hook)"'
         command += f' && conda activate {env}'
         command += ' && conda env list'
         os.system(command)
+        self.update_env_path(env)
 
     def install_pytorch(self):
         if not Util.check_input_yes('Install pytorch?([y]/n):'):
@@ -209,7 +239,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
                                      'torch==1.5.0+cpu torchvision==0.6.0+cpu -f https://download.pytorch.org/whl/torch_stable.html')
         self.install_conda_packages(env)
         self.install_pip_packages(['visdom'])
-        print('Install pytorch done.')
+        print('\nInstall pytorch done.')
 
     def install_tensorflow(self):
         if not Util.check_input_yes('Install tensorflow?([y]/n):'):
@@ -237,7 +267,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
                     self.pip_install('tensorflow')
         self.install_conda_packages(env)
         self.install_pip_packages()
-        print('Install tensorflow done.')
+        print('\nInstall tensorflow done.')
 
     def install_pycharm(self):
         if not Util.check_input_yes('Install pycharm?([y]/n):'):
@@ -257,25 +287,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         dirname = os.path.dirname(sys.executable)
         envpath = os.path.join(dirname, f'envs/{env}')
         python = os.path.join(envpath, 'python')
-        if platform.system() != "Windows":
-            envpath = os.path.join(dirname, f'../envs/{env}')
-            python = os.path.join(envpath, 'bin/python')
-            pathlist = [
-                os.path.join(envpath, 'bin'),
-            ]
-            os.environ["PATH"] = os.pathsep.join(pathlist) + os.pathsep + os.environ["PATH"]
-            # print(os.environ["PATH"])
-        else:
-            pathlist = [
-                envpath,
-                os.path.join(envpath, 'Library/mingw-w64/bin'),
-                os.path.join(envpath, 'Library/usr/bin'),
-                os.path.join(envpath, 'Library/bin'),
-                os.path.join(envpath, 'Scripts'),
-                os.path.join(envpath, 'bin'),
-            ]
-            os.environ["PATH"] = os.pathsep.join(pathlist) + os.pathsep + os.environ["PATH"]
-            # print(os.environ["PATH"])
+        self.update_env_path(env)
         os.system(f'{python} check.py')
         print()
         print('-' * 60, end='\n\n')
@@ -296,6 +308,11 @@ print()
 print("tf.config.list_physical_devices('GPU')", tf.config.list_physical_devices('GPU'))'''
         self.check_env(self.tf_env, check_code)
 
+    def setup_jupyter(self):
+        jupyter_conf = os.path.join(os.path.expanduser('~'), '.jupyter/jupyter_notebook_config.py')
+        if not os.path.exists(jupyter_conf):
+            os.system('jupyter notebook --generate-config')
+
     def run(self):
         self.setup_conda()
         self.setup_pip()
@@ -305,6 +322,7 @@ print("tf.config.list_physical_devices('GPU')", tf.config.list_physical_devices(
         self.install_tensorflow()
         self.check_tf()
         self.install_pycharm()
+        # self.setup_jupyter()
 
 
 def main():
