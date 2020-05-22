@@ -66,7 +66,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
                                'jupyter notebook'
                                ]
         self.pip_packages = ['opencv-python']
-        self.python_ver = '3.8'
+        self.python_ver = '3.7'
         self.pt_env = f'pytorch{self.python_ver}'
         self.tf_env = f'tensorflow{self.python_ver}'
         self.pathenv = None
