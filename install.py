@@ -7,6 +7,7 @@ import urllib
 import webbrowser
 import platform
 from urllib.request import urlretrieve
+from pathlib import Path
 
 
 class Util:
@@ -27,7 +28,7 @@ class Util:
 
 class CondaPT:
     def __init__(self):
-        self.currentdir = os.path.dirname(__file__)
+        self.currentdir = Path(__file__)
         print('currentdir:', self.currentdir)
 
         self.conda_settings = '''channels:
@@ -90,8 +91,8 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         os.system(pip_install)
 
     def setup_conda(self):
-        condarc = os.path.join(os.path.expanduser('~'), r'.condarc')
-        if os.path.exists(condarc):
+        condarc = Path.home().joinpath(r'.condarc')
+        if condarc.exists():
             with open(condarc, 'r') as f:
                 content = f.read()
                 if self.conda_settings in content:
@@ -111,10 +112,10 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         os.system('conda clean -i ')
         os.system('conda update -n base -c defaults conda -y')
         if platform.system() == "Darwin":
-            dirname = os.path.dirname(sys.executable)
-            if not os.path.exists(os.path.join(dirname, '../lib/libffi.6.dylib')):
-                command = 'ln -s %s %s' % (os.path.join(dirname, '../lib/libffi.7.dylib'),
-                                           os.path.join(dirname, '../lib/libffi.6.dylib'))
+            exedir = Path(sys.executable).parent
+            if not exedir.joinpath('../lib/libffi.6.dylib').exists():
+                command = 'ln -s %s %s' % (exedir.joinpath('../lib/libffi.7.dylib'),
+                                           exedir.joinpath('../lib/libffi.6.dylib'))
                 os.system(command)
 
     def setup_pip(self):
@@ -124,12 +125,12 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
             pippathname = '.pip'
             pipconfname = 'pip.conf'
 
-        pipconfpath = os.path.join(os.path.expanduser('~'), pippathname)
-        if not os.path.exists(pipconfpath):
-            os.mkdir(pipconfpath)
+        pipconfpath = Path.home().joinpath(pippathname)
+        if not pipconfpath.exists():
+            pipconfpath.mkdir()
 
-        pipconf = os.path.join(pipconfpath, pipconfname)
-        if os.path.exists(pipconf):
+        pipconf = pipconfpath.joinpath(pipconfname)
+        if pipconf.exists():
             with open(pipconf, 'r') as f:
                 content = f.read()
                 if self.pip_settings in content:
@@ -170,28 +171,28 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         self.pip_install(*pip_packages)
 
     def update_env_path(self, env):
-        exedirname = os.path.dirname(sys.executable)
-        envpath = os.path.join(exedirname, f'envs/{env}')
+        exedirname = Path(sys.executable).parent
+        envpath = exedirname.joinpath(f'envs/{env}')
         if platform.system() != "Windows":
-            envpath = os.path.join(exedirname, f'../envs/{env}')
+            envpath = exedirname.joinpath(f'../envs/{env}')
             pathlist = [
-                os.path.join(envpath, 'bin'),
+                envpath.joinpath('bin'),
             ]
         else:
             pathlist = [
                 envpath,
-                os.path.join(envpath, 'Library/mingw-w64/bin'),
-                os.path.join(envpath, 'Library/usr/bin'),
-                os.path.join(envpath, 'Library/bin'),
-                os.path.join(envpath, 'Scripts'),
-                os.path.join(envpath, 'bin'),
+                envpath.joinpath('Library/mingw-w64/bin'),
+                envpath.joinpath('Library/usr/bin'),
+                envpath.joinpath('Library/bin'),
+                envpath.joinpath('Scripts'),
+                envpath.joinpath('bin'),
             ]
 
         if self.pathenv:
             os.environ["PATH"] = os.environ["PATH"].replace(self.pathenv, '')
             # print(os.environ["PATH"])
 
-        self.pathenv = os.pathsep.join(pathlist) + os.pathsep
+        self.pathenv = os.pathsep.join(map(str, pathlist)) + os.pathsep
         os.environ["PATH"] = self.pathenv + os.environ["PATH"]
         # print(os.environ["PATH"])
 
@@ -283,12 +284,12 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         with open('check.py', 'w') as f:
             f.write(check_code)
 
-        exedirname = os.path.dirname(sys.executable)
-        envpath = os.path.join(exedirname, f'envs/{env}')
-        python = os.path.join(envpath, 'python')
+        exedirname = Path(sys.executable).parent
+        envpath = exedirname.joinpath(f'envs/{env}')
+        python = envpath.joinpath('python')
         if platform.system() != "Windows":
-            envpath = os.path.join(exedirname, f'../envs/{env}')
-            python = os.path.join(envpath, 'bin/python')
+            envpath = exedirname.joinpath(f'../envs/{env}')
+            python = envpath.joinpath('bin/python')
         self.update_env_path(env)
         os.system(f'{python} check.py')
         print()
@@ -311,8 +312,8 @@ print("tf.config.list_physical_devices('GPU')", tf.config.list_physical_devices(
         self.check_env(self.tf_env, check_code)
 
     def setup_jupyter(self):
-        jupyter_conf = os.path.join(os.path.expanduser('~'), '.jupyter/jupyter_notebook_config.py')
-        if not os.path.exists(jupyter_conf):
+        jupyter_conf = Path.home().joinpath('.jupyter/jupyter_notebook_config.py')
+        if not jupyter_conf.exists():
             os.system('jupyter notebook --generate-config')
 
     def run(self):
