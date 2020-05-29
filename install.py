@@ -8,6 +8,7 @@ import webbrowser
 import platform
 from urllib.request import urlretrieve
 from pathlib import Path
+from dataclasses import dataclass
 
 
 class Util:
@@ -26,12 +27,9 @@ class Util:
         return False
 
 
+@dataclass
 class CondaPT:
-    def __init__(self):
-        self.currentdir = Path(__file__)
-        print('currentdir:', self.currentdir)
-
-        self.conda_settings = '''channels:
+    conda_settings = '''channels:
   - defaults
 show_channel_urls: true
 channel_alias: https://mirrors.tuna.tsinghua.edu.cn/anaconda
@@ -49,28 +47,30 @@ custom_channels:
   pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
   simpleitk: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud'''
 
-        self.pip_settings = '''[global]
+    pip_settings = '''[global]
 index-url=https://mirrors.aliyun.com/pypi/simple
 [install]
 trusted-host=mirrors.aliyun.com'''
-
-        self.pip_settings_tuna = '''[global]
+    pip_settings_tuna = '''[global]
 index-url=https://pypi.tuna.tsinghua.edu.cn/simple
 [install]
 trusted-host=pypi.tuna.tsinghua.edu.cn'''
+    silent_mode = True
+    conda_packages = ['tensorboard',
+                           'ipython',
+                           'matplotlib',
+                           'pandas',
+                           'jupyter notebook'
+                           ]
+    pip_packages = ['opencv-python']
+    python_ver = '3.7'
+    pt_env = f'pytorch{python_ver}'
+    tf_env = f'tensorflow{python_ver}'
+    pathenv = None
 
-        self.silent_mode = True
-        self.conda_packages = ['tensorboard',
-                               'ipython',
-                               'matplotlib',
-                               'pandas',
-                               'jupyter notebook'
-                               ]
-        self.pip_packages = ['opencv-python']
-        self.python_ver = '3.7'
-        self.pt_env = f'pytorch{self.python_ver}'
-        self.tf_env = f'tensorflow{self.python_ver}'
-        self.pathenv = None
+    def __post_init__(self):
+        self.currentdir = Path(__file__)
+        print('currentdir:', self.currentdir)
 
     def conda_install(self, env, *packages):
         if env != '':
@@ -91,7 +91,7 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
         os.system(pip_install)
 
     def setup_conda(self):
-        condarc = Path.home().joinpath(r'.condarc')
+        condarc = Path.home() / r'.condarc'
         if condarc.exists():
             with open(condarc, 'r') as f:
                 content = f.read()
@@ -125,11 +125,11 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
             pippathname = '.pip'
             pipconfname = 'pip.conf'
 
-        pipconfpath = Path.home().joinpath(pippathname)
+        pipconfpath = Path.home() / pippathname
         if not pipconfpath.exists():
             pipconfpath.mkdir()
 
-        pipconf = pipconfpath.joinpath(pipconfname)
+        pipconf = pipconfpath / pipconfname
         if pipconf.exists():
             with open(pipconf, 'r') as f:
                 content = f.read()
@@ -172,20 +172,20 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
 
     def update_env_path(self, env):
         exedirname = Path(sys.executable).parent
-        envpath = exedirname.joinpath(f'envs/{env}')
+        envpath = exedirname / f'envs/{env}'
         if platform.system() != "Windows":
-            envpath = exedirname.joinpath(f'../envs/{env}')
+            envpath = exedirname / f'../envs/{env}'
             pathlist = [
-                envpath.joinpath('bin'),
+                envpath / 'bin',
             ]
         else:
             pathlist = [
                 envpath,
-                envpath.joinpath('Library/mingw-w64/bin'),
-                envpath.joinpath('Library/usr/bin'),
-                envpath.joinpath('Library/bin'),
-                envpath.joinpath('Scripts'),
-                envpath.joinpath('bin'),
+                envpath / 'Library/mingw-w64/bin',
+                envpath / 'Library/usr/bin',
+                envpath / 'Library/bin',
+                envpath / 'Scripts',
+                envpath / 'bin',
             ]
 
         if self.pathenv:
@@ -285,11 +285,11 @@ trusted-host=pypi.tuna.tsinghua.edu.cn'''
             f.write(check_code)
 
         exedirname = Path(sys.executable).parent
-        envpath = exedirname.joinpath(f'envs/{env}')
-        python = envpath.joinpath('python')
+        envpath = exedirname / f'envs/{env}'
+        python = envpath / 'python'
         if platform.system() != "Windows":
-            envpath = exedirname.joinpath(f'../envs/{env}')
-            python = envpath.joinpath('bin/python')
+            envpath = exedirname / f'../envs/{env}'
+            python = envpath / 'bin/python'
         self.update_env_path(env)
         os.system(f'{python} check.py')
         print()
@@ -312,7 +312,7 @@ print("tf.config.list_physical_devices('GPU')", tf.config.list_physical_devices(
         self.check_env(self.tf_env, check_code)
 
     def setup_jupyter(self):
-        jupyter_conf = Path.home().joinpath('.jupyter/jupyter_notebook_config.py')
+        jupyter_conf = Path.home() / '.jupyter/jupyter_notebook_config.py'
         if not jupyter_conf.exists():
             os.system('jupyter notebook --generate-config')
 
@@ -331,7 +331,6 @@ print("tf.config.list_physical_devices('GPU')", tf.config.list_physical_devices(
 def main():
     condaPT = CondaPT()
     condaPT.run()
-    pass
 
 
 if __name__ == "__main__":
